@@ -13,6 +13,7 @@ output: md_document
 ```{r} 
 library(tidyverse)
 library(nycflights13)
+library(ggplot2)
 
 airports %>%
   semi_join(flights, c("faa" = "dest")) %>%
@@ -33,6 +34,30 @@ airports
 weather
 
 # put your answer here.
+# x=flights %>% 
+#   group_by(dest) %>% 
+#   summarise(avedelay=mean(arr_delay,na.rm = T)) 
+# 
+# ggplot(data=x)+
+#   geom_point(mapping=aes(dest,avedelay,size=avedelay))
+
+# put your answer here.
+flights_delay = flights %>% 
+  group_by(dest) %>% 
+  summarise(ave_arr_delay = mean(arr_delay, na.rm = T))
+
+airports %>% 
+  left_join(flights_delay, c("faa" = "dest")) %>%
+  filter(lat >= 20 & lat<=70, lon>=-160 & lon <= -60) %>% 
+  filter(!is.na(ave_arr_delay)) %>% 
+  ggplot(aes(x=lon, y=lat, na.rm = T, colour = ave_arr_delay)) +
+  borders("state") +
+  geom_point() +
+  coord_quickmap() +
+  scale_colour_gradient(low = 'lightblue', high = 'darkblue')
+  
+
+
 ```
 
 
@@ -42,6 +67,15 @@ You might expect that there’s an implicit relationship between plane and airli
 
 ```{r}
 # put your answer here. 
+x2=flights %>% 
+  group_by(tailnum,carrier) %>% 
+  summarise(count=n()) %>% 
+  group_by(tailnum) %>% 
+  summarise(count=n())
+x2
+x2[x2$count!=1,]
+
+#We found some planes are flown by 2 airlines
 ```
 
 
@@ -50,7 +84,9 @@ You might expect that there’s an implicit relationship between plane and airli
 Notice that ```flights$air_time``` is in minutes.  Make a new column that is the air time in hours. 
 
 ```{r}
-# put your answer here.  
+# put your answer here. 
+flights %>% 
+  mutate(air_time_hour=air_time/60)
 ```
 
 
@@ -60,6 +96,14 @@ For each flight, compute the average speed of that flight (in miles per hour).  
 
 ```{r}
 # put your answer here.  
+x4=flights %>% 
+  mutate(air_time_hour=air_time/60) %>% 
+  mutate(ave_speed=distance/air_time_hour) %>% 
+  group_by(tailnum) %>% 
+  summarise(speed=mean(ave_speed,na.rm = T))
+x4  
+
+hist(x4$speed,breaks = length(x4$speed),xlab = 'average_speed',freq = T)
 ```
 
 
@@ -71,6 +115,17 @@ To examine if there is anything in the plane data that correlates with average s
 
 ```{r}
 # put answer here
+x5=x4 %>% 
+  left_join(planes,by='tailnum') 
+
+ggplot(data=x5,mapping = aes(x=x5$engine,y=speed.x))+
+  geom_boxplot()
+
+ggplot(data=x5,mapping = aes(x=as.factor(x5$engines),y=speed.x))+
+  geom_boxplot()
+
+ggplot(data=x5,mapping = aes(x=x5$type,y=speed.x))+
+  geom_boxplot()
 ```
 
 PLEASE REMEMBER TO ALSO COMMIT AND PUSH YOUR FIGURES!!!
